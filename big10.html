@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Big Ten — Scouting</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand"><a href="/">Penn State Men's Soccer</a></div>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="/">Home</a>
+            <a href="/scouting">Scouting</a>
+            <a href="/squad-builder">Squad Builder</a>
+        </nav>
+    </header>
+
+    <main class="page" role="main">
+        <!-- Hero -->
+        <header class="hero-banner">
+            <!-- background image contains B1G SCOUTING artwork -->
+            <h2 class="sr-only">B1G Scouting</h2>
+        </header>
+
+        <!-- Position Filter Bar -->
+        <nav class="filter-bar top">
+            <div class="filter-title">Filter by Position</div>
+            <div class="filters">
+                <button class="position-filter active" data-pos="all">ALL</button>
+                <button class="position-filter" data-pos="ST">ST</button>
+                <button class="position-filter" data-pos="AM">AM</button>
+                <button class="position-filter" data-pos="WM">WM</button>
+                <button class="position-filter" data-pos="CM">CM</button>
+                <button class="position-filter" data-pos="FB">FB</button>
+                <button class="position-filter" data-pos="CB">CB</button>
+                <button class="position-filter" data-pos="GK">GK</button>
+            </div>
+        </nav>
+
+        <!-- Stats Filter Bar -->
+        <nav class="filter-bar secondary" aria-label="Stats filters">
+            <div class="filter-title">Filter by Stat</div>
+            <div class="stat-categories">
+                <button class="stat-filter active" data-stat="offensive">Offensive</button>
+                <button class="stat-filter" data-stat="defensive">Defensive</button>
+                <button class="stat-filter" data-stat="passing">Passing</button>
+                <button class="stat-filter" data-stat="duels">Duels</button>
+                <button class="stat-filter" data-stat="ratings">Ratings</button>
+            </div>
+        </nav>
+
+        <!-- Player list area -->
+        <section class="players-area">
+            {# Map team display names to logo filenames in `static/team logos/` #}
+            {% set _team_logos = {
+                'Penn State': 'psu_logo.png',
+                'Rutgers': 'Rutgers_logo.png',
+                'Maryland': 'Maryland_logo.png',
+                'Northwestern': 'NW_logo.png',
+                'Michigan': 'Michigan_logo.png',
+                'Michigan State': 'MichSt_logo.png',
+                'Ohio State': 'OSU_logo.png',
+                'Washington': 'Washington_logo.png',
+                'Wisconsin': 'Wisconsin_logo.png',
+                'Indiana': 'Indiana_logo.png'
+            } %}
+            <div class="left-col">
+                <div class="top-players-banner">
+                    <span class="banner-text">Highest Rated Players</span>
+                </div>
+
+                <!-- Container that will be populated client-side with the top 5 players for the current position -->
+                <div class="left-cards" aria-live="polite">
+                    {# Optional server-rendered fallback: show initial top 5 (kept simple) #}
+                    {% for p in (players|sort(attribute='rating', reverse=True))[:5] %}
+                    <article class="player-card" data-position="{{ p.role if p.role is defined else p.position }}" data-rating="{{ p.rating|float }}" data-player-name="{{ p.player_name }}" data-photo="{{ url_for('static', filename=('player_photos/' ~ p.player_name ~ '.jpg')) }}" data-team="{{ p.team }}" data-position-display="{{ p.position if p.position is defined else '' }}">
+                        <img class="player-photo" src="{{ url_for('static', filename=('player_photos/' ~ p.player_name ~ '.jpg')) }}" alt="{{ p.player_name }} photo">
+                        <div class="player-details">
+                            <div class="player-name">{{ p.player_name }}</div>
+                            <div class="player-meta">{{ p.position if p.position is defined else '' }} • {{ p.team if p.team is defined else '' }}</div>
+                        </div>
+                        <div class="player-rating">{{ '%.1f'|format(p.rating if p.rating is defined else 0) }}</div>
+                        {% set _logo = _team_logos.get(p.team, 'Big_Ten_logo.png') %}
+                        <!-- kept for server-rendered fallback; CSS will make this a centered faint watermark -->
+                        <img class="team-watermark" src="{{ url_for('static', filename=('team logos/' ~ _logo)) }}" alt="" aria-hidden="true">
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <aside class="right-col">
+                <!-- Stats table header (will be sticky) -->
+                <div class="player-row header-row">
+                    <div class="player-info">
+                        <span class="col-rk">RK</span>
+                        <span class="col-player">PLAYER</span>
+                    </div>
+                    <div class="stats-columns">
+                        <span class="stat-col" data-stat="offensive">G</span>
+                        <span class="stat-col" data-stat="offensive">xG</span>
+                        <span class="stat-col" data-stat="offensive">A</span>
+                        <span class="stat-col" data-stat="offensive">xA</span>
+                        <span class="stat-col" data-stat="offensive">SH</span>
+                        <span class="stat-col" data-stat="offensive">SoT</span>
+                        <span class="stat-col" data-stat="defensive">INT</span>
+                        <span class="stat-col" data-stat="defensive">CLR</span>
+                        <span class="stat-col" data-stat="defensive">TKL</span>
+                        <span class="stat-col" data-stat="defensive">DW</span>
+                        <span class="stat-col" data-stat="passing">PS</span>
+                        <span class="stat-col" data-stat="passing">ACC</span>
+                        <span class="stat-col" data-stat="duels">DUL</span>
+                        <span class="stat-col" data-stat="duels">DW%</span>
+                        <span class="stat-col" data-stat="ratings">Rating</span>
+                        <span class="stat-col" data-stat="ratings">Att</span>
+                        <span class="stat-col" data-stat="ratings">Def</span>
+                        <span class="stat-col" data-stat="ratings">Pass</span>
+                        <span class="stat-col" data-stat="ratings">Duel</span>
+                    </div>
+                </div>
+                
+                {% for p in players %}
+                <!-- Add data attributes so the client script can build the left-column "top 5" from the canonical table data -->
+                <div class="player-row data-row"
+                     data-position="{{ p.role if p.role is defined else p.position }}"
+                     data-rating="{{ (p.rating|float) if p.rating is defined else 0 }}"
+                     data-player-name="{{ p.player_name }}"
+                     data-photo="{{ url_for('static', filename=('player_photos/' ~ p.player_name ~ '.jpg')) }}"
+                     data-team="{{ p.team }}"
+                     data-position-display="{{ p.position if p.position is defined else '' }}">
+                    <div class="player-info">
+                        <span class="col-rk">{{ loop.index }}</span>
+                        <div class="player-block">
+                            <img class="mini-photo" src="{{ url_for('static', filename=('player_photos/' ~ p.player_name ~ '.jpg')) }}" alt="{{ p.player_name }}">
+                            <div class="player-name-section">
+                                <span class="player-name">{{ p.player_name }}</span>
+                                <span class="player-pos">{{ p.position if p.position is defined else '—' }}</span>
+                                <span class="player-team">{{ p.team if p.team is defined else '—' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-columns">
+                        <span class="stat-col" data-stat="offensive">{{ p.goals|int }}</span>
+                        <span class="stat-col" data-stat="offensive">{{ "%.1f"|format(p.xg) }}</span>
+                        <span class="stat-col" data-stat="offensive">{{ p.assists|int }}</span>
+                        <span class="stat-col" data-stat="offensive">{{ "%.1f"|format(p.xa) }}</span>
+                        <span class="stat-col" data-stat="offensive">{{ p.shots_attempted|int }}</span>
+                        <span class="stat-col" data-stat="offensive">{{ p.shots_on_target|int }}</span>
+                        <span class="stat-col" data-stat="defensive">{{ p.interceptions|int }}</span>
+                        <span class="stat-col" data-stat="defensive">{{ p.clearances|int }}</span>
+                        <span class="stat-col" data-stat="defensive">{{ p.sliding_tackles_total|int }}</span>
+                        <span class="stat-col" data-stat="defensive">{{ p.defensive_duels_won|int }}</span>
+                        <span class="stat-col" data-stat="passing">{{ p.passes_attempted|int }}</span>
+                        <span class="stat-col" data-stat="passing">{% if p.passes_attempted > 0 %}{{ "%.0f"|format((p.passes_completed / p.passes_attempted * 100)) }}{% else %}—{% endif %}</span>
+                        <span class="stat-col" data-stat="duels">{{ p.duels_attempted|int }}</span>
+                        <span class="stat-col" data-stat="duels">{% if p.duels_attempted > 0 %}{{ "%.0f"|format((p.duels_won / p.duels_attempted * 100)) }}{% else %}—{% endif %}</span>
+                        <span class="stat-col" data-stat="ratings">{{ "%.2f"|format(p.rating|float) if p.rating else "0.00" }}</span>
+                        <span class="stat-col" data-stat="ratings">{{ "%.2f"|format((p.offensive_grade|float) * 10) if p.offensive_grade else "0.00" }}</span>
+                        <span class="stat-col" data-stat="ratings">{{ "%.2f"|format((p.defensive_grade|float) * 10) if p.defensive_grade else "0.00" }}</span>
+                        <span class="stat-col" data-stat="ratings">{{ "%.2f"|format((p.passing_grade|float) * 10) if p.passing_grade else "0.00" }}</span>
+                        <span class="stat-col" data-stat="ratings">{{ "%.2f"|format((p.duel_grade|float) * 10) if p.duel_grade else "0.00" }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </aside>
+        </section>
+    </main>
+
+    <footer style="text-align:center;padding:20px 0;color:#6b7280">&copy; Penn State Men's Soccer</footer>
+
+    <style>
+        :root{--page-pad:24px;--blue-1:#002855;--blue-2:#2a6fb7;--accent:#ffcb05}
+        .page{max-width:1200px;margin:20px auto;padding:0 var(--page-pad)}
+        .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+        /* Hero */
+        .hero-banner{height:250px;border-radius:48px;background:url('{{ url_for('static', filename='Scouting_banner.png') }}') center/cover no-repeat;margin-bottom:18px}
+
+        /* Filter bars */
+        .filter-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:28px;margin-bottom:12px}
+        .filter-bar.top{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;height:56px;width:calc(100% - 400px);margin-left:auto;margin-right:0;margin-bottom:12px;border-radius:28px}
+        .filter-bar.top .filter-title{font-weight:700;margin-left:12px}
+        .filter-bar.secondary .filter-title{font-weight:700;margin-left:12px}
+        .filter-bar.top .filters{display:flex;gap:8px;margin-right:12px}
+        .position-filter{background:transparent;border:none;color:#fff;padding:8px 12px;border-radius:18px;font-weight:700;cursor:pointer;transition:background 0.2s}
+        .position-filter.active{background:rgba(255,255,255,0.2)}
+        .position-filter:hover{background:rgba(255,255,255,0.1)}
+
+        .filter-bar.secondary{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;width:calc(100% - 400px);margin-left:auto;margin-right:0;border-radius:28px}
+        .stat-categories{display:flex;gap:0;flex:1;justify-content:space-evenly}
+        .stat-filter{background:transparent;border:none;color:#fff;padding:8px 12px;border-radius:18px;font-weight:700;cursor:pointer;transition:background 0.2s;border-bottom:none;flex:1;text-align:center}
+        .stat-filter.active{border-bottom-color:#ffcb05;background:rgba(255,255,255,0.2);border-bottom:none}
+        .stat-filter:hover{background:rgba(255,255,255,0.1)}
+
+        /* Players area */
+        .players-area{display:grid;grid-template-columns:380px 1fr;gap:20px;margin-top:18px}
+        .left-col{display:flex;flex-direction:column;gap:18px;position:relative}
+        .top-players-banner{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;padding:12px 16px;border-radius:12px;text-align:center;font-weight:700;font-size:14px;margin-bottom:6px;margin-top:-135px}
+        .left-cards{display:flex;flex-direction:column;gap:18px}
+
+        /* Player card + watermark */
+        .player-card{position:relative;background:#fff;border-radius:28px;padding:18px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 18px rgba(0,0,0,0.06);overflow:hidden}
+        .player-card .player-photo{width:84px;height:84px;border-radius:999px;object-fit:cover;z-index:2;position:relative}
+        .player-details{flex:1;z-index:2;position:relative}
+        .player-name{font-weight:800;font-size:1.05rem}
+        .player-meta{color:#6b7280;font-size:0.9rem}
+        .player-rating{font-weight:900;font-size:1.6rem;color:var(--blue-1);margin-left:8px;z-index:2;position:relative}
+        .player-card .team-watermark{
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%) scale(1.6);
+            width:auto;
+            height:80%;
+            opacity:0.06;
+            object-fit:contain;
+            pointer-events:none;
+            z-index:1;
+            filter:grayscale(100%);
+        }
+
+        /* Right column - table layout */
+        .right-col{display:flex;flex-direction:column;gap:0;position:relative}
+        .player-row{display:flex;align-items:center;gap:0;background:#fff;padding:0;border-bottom:1px solid #e5e7eb}
+        /* Make the header row sticky so RK/PLAYER and the stat labels stay visible while scrolling */
+        .player-row.header-row{
+            position:-webkit-sticky;
+            position:sticky;
+            top:20px;                 /* distance from viewport top; adjust if you want more space */
+            z-index:30;               /* above table rows */
+            background:#f9fafb;       /* keep same background so it overlays cleanly */
+            border-bottom:2px solid #d1d5db;
+            font-weight:700;
+            font-size:11px;
+            color:#6b7280;
+            padding:8px 0;
+        }
+
+        .player-row.data-row{padding:8px 0;transition:background 0.2s ease}
+        .player-row.data-row:hover{background:#f3f4f6}
+        
+        .player-info{display:flex;align-items:center;gap:12px;flex-shrink:0;padding:0 12px;min-width:300px;border-right:1px solid #e5e7eb}
+        .col-rk{display:inline-flex;align-items:center;justify-content:center;width:30px;font-size:12px;color:#6b7280;font-weight:700;flex-shrink:0}
+        .col-player{flex:1}
+        
+        .player-block{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+        .mini-photo{width:36px;height:36px;border-radius:999px;object-fit:cover;flex-shrink:0;border:1px solid #d1d5db}
+        
+        .player-name-section{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+        .player-name{font-weight:700;font-size:13px;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .player-pos{font-size:11px;color:#6b7280;font-weight:700;padding:2px 6px;background:#f3f4f6;border-radius:4px;white-space:nowrap;flex-shrink:0}
+        .player-team{font-size:11px;color:#6b7280;font-weight:700;white-space:nowrap;flex-shrink:0}
+        
+        .stats-columns{display:flex;gap:0;flex:1;align-items:center;padding:0 12px;min-width:0}
+        .stat-col{display:inline-flex;align-items:center;justify-content:center;min-width:45px;text-align:center;font-size:12px;font-weight:600;color:#1f2937;border-right:1px solid #e5e7eb;padding:0 6px;flex-shrink:0}
+        .stat-col:last-child{border-right:none}
+        .player-row.header-row .stat-col{color:#6b7280;font-weight:700;font-size:11px}
+
+        /* Make header stat columns look clickable and show sort indicator */
+        .player-row.header-row .stat-col{cursor:pointer; position:relative}
+        .player-row.header-row .stat-col.sorted-desc::after{
+            content: " ▼";
+            font-size:11px;
+            color:#374151;
+        }
+        .player-row.header-row .stat-col.sorted-asc::after{
+            content: " ▲";
+            font-size:11px;
+            color:#374151;
+        }
+
+        @media (max-width:1200px){.stats-columns{overflow-x:auto;-webkit-overflow-scrolling:touch}}
+        @media (max-width:900px){.players-area{grid-template-columns:1fr;}.hero-banner{height:180px}.player-info{min-width:200px}}
+    </style>
+
+    <script>
+        // Expose the TEAM_LOGOS mapping from the server so we can render watermarks client-side
+        const TEAM_LOGOS = {{ _team_logos|tojson|safe }};
+
+        document.addEventListener('DOMContentLoaded', function () {
+            let currentStatFilter = 'offensive';
+            let currentPositionFilter = 'all';
+
+            // Build a canonical players array from the table rows (so we have one source of truth client-side)
+            const tableRows = Array.from(document.querySelectorAll('.player-row.data-row'));
+            const PLAYERS = tableRows.map(row => {
+                return {
+                    name: row.dataset.playerName || '',
+                    rating: parseFloat(row.dataset.rating) || 0,
+                    posKey: (row.dataset.position || '').toString(),
+                    posDisplay: row.dataset.positionDisplay || row.dataset.position || '',
+                    photo: row.dataset.photo || '',
+                    team: row.dataset.team || ''
+                };
+            });
+
+            // Utility to create a player card element (same markup/styling as server)
+            function createPlayerCard(player) {
+                const art = document.createElement('article');
+                art.className = 'player-card';
+                art.setAttribute('data-position', player.posKey);
+                art.setAttribute('data-rating', player.rating);
+                art.setAttribute('data-player-name', player.name);
+                art.setAttribute('data-photo', player.photo);
+                art.setAttribute('data-team', player.team);
+                art.setAttribute('data-position-display', player.posDisplay);
+
+                const img = document.createElement('img');
+                img.className = 'player-photo';
+                img.src = player.photo;
+                img.alt = player.name + ' photo';
+                art.appendChild(img);
+
+                const details = document.createElement('div');
+                details.className = 'player-details';
+                const nm = document.createElement('div');
+                nm.className = 'player-name';
+                nm.textContent = player.name;
+                const meta = document.createElement('div');
+                meta.className = 'player-meta';
+                meta.textContent = (player.posDisplay ? (player.posDisplay + ' • ') : '') + (player.team || '');
+                details.appendChild(nm);
+                details.appendChild(meta);
+                art.appendChild(details);
+
+                const rating = document.createElement('div');
+                rating.className = 'player-rating';
+                rating.textContent = (isFinite(player.rating) ? player.rating.toFixed(1) : '0.0');
+                art.appendChild(rating);
+
+                const logo = document.createElement('img');
+                logo.className = 'team-watermark';
+                const logoFile = TEAM_LOGOS[player.team] || 'Big_Ten_logo.png';
+                // Construct URL using the same static path pattern the server uses
+                logo.src = '/static/team logos/' + logoFile;
+                logo.alt = '';
+                logo.setAttribute('aria-hidden', 'true');
+                art.appendChild(logo);
+
+                return art;
+            }
+
+            // Renders the top N players for a given position key (or 'all') into .left-cards
+            function renderTopPlayers(positionKey, topN = 5) {
+                const container = document.querySelector('.left-cards');
+                if (!container) return;
+
+                // Filter players by the requested position (or keep all)
+                const filtered = PLAYERS.filter(p => {
+                    if (!positionKey || positionKey === 'all') return true;
+                    return p.posKey === positionKey;
+                });
+
+                // Sort by rating desc and take topN
+                const top = filtered.sort((a, b) => b.rating - a.rating).slice(0, topN);
+
+                // Clear and repopulate
+                container.innerHTML = '';
+                if (top.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.style.color = '#6b7280';
+                    emptyMsg.textContent = 'No players found for this position.';
+                    container.appendChild(emptyMsg);
+                    return;
+                }
+
+                top.forEach(p => {
+                    container.appendChild(createPlayerCard(p));
+                });
+            }
+
+            // Position filter buttons
+            document.querySelectorAll('.position-filter').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.position-filter').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentPositionFilter = this.dataset.pos;
+                    filterPlayers();         // show/hide table rows
+                    renderTopPlayers(currentPositionFilter); // rebuild left column top 5 for that pos
+                });
+            });
+
+            // Stats filter buttons
+            document.querySelectorAll('.stat-filter').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.stat-filter').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentStatFilter = this.dataset.stat;
+                    filterStats();
+                });
+            });
+
+            function filterPlayers() {
+                // Filter table rows (the main list)
+                document.querySelectorAll('.player-row.data-row').forEach(row => {
+                    const playerPos = row.dataset.position;
+                    if (currentPositionFilter === 'all' || playerPos === currentPositionFilter) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            function filterStats() {
+                const headerCols = document.querySelectorAll('.header-row .stat-col');
+                const dataCols = document.querySelectorAll('.data-row .stat-col');
+
+                headerCols.forEach(col => {
+                    col.style.display = (col.dataset.stat === currentStatFilter) ? '' : 'none';
+                });
+
+                dataCols.forEach(col => {
+                    col.style.display = (col.dataset.stat === currentStatFilter) ? '' : 'none';
+                });
+            }
+
+            // --- Sorting functionality for header stat labels ---
+            // We'll add a click handler to each visible header stat column and sort the data rows by that column.
+            const headerCols = Array.from(document.querySelectorAll('.header-row .stat-col'));
+            let sortState = { colIndex: null, direction: 'desc' }; // default direction when selecting a new column
+
+            // Helper: parse displayed cell text into a numeric value (falls back to -Infinity for missing)
+            function parseStatValue(text) {
+                if (!text) return Number.NEGATIVE_INFINITY;
+                const trimmed = text.trim();
+                if (trimmed === '—' || trimmed === '') return Number.NEGATIVE_INFINITY;
+                // remove commas and percent signs, then parse
+                const cleaned = trimmed.replace(/,/g, '').replace('%', '');
+                const n = parseFloat(cleaned);
+                return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+            }
+
+            // Sort function: takes stat column index (relative to .stats-columns)
+            function sortByStat(colIndex) {
+                const rightCol = document.querySelector('.right-col');
+                const headerRow = rightCol.querySelector('.header-row');
+
+                // Determine new sort direction
+                if (sortState.colIndex === colIndex) {
+                    // toggle
+                    sortState.direction = (sortState.direction === 'desc') ? 'asc' : 'desc';
+                } else {
+                    sortState.colIndex = colIndex;
+                    sortState.direction = 'desc'; // default to highest -> lowest on new column selection
+                }
+
+                // Gather all data rows (we'll reorder all rows so order persists)
+                const rows = Array.from(document.querySelectorAll('.player-row.data-row'));
+
+                // Sort rows by the numeric value in the corresponding .stat-col cell
+                const sorted = rows.sort((a, b) => {
+                    const aCells = Array.from(a.querySelectorAll('.stats-columns .stat-col'));
+                    const bCells = Array.from(b.querySelectorAll('.stats-columns .stat-col'));
+                    const aCell = aCells[colIndex];
+                    const bCell = bCells[colIndex];
+                    const aVal = parseStatValue(aCell ? aCell.textContent : '');
+                    const bVal = parseStatValue(bCell ? bCell.textContent : '');
+                    if (aVal === bVal) return 0;
+                    if (sortState.direction === 'desc') return bVal - aVal;
+                    return aVal - bVal;
+                });
+
+                // Remove existing data rows from DOM then re-append in sorted order after the header
+                sorted.forEach(r => rightCol.appendChild(r));
+
+                // Update header visual state (add sorted-desc or sorted-asc class)
+                headerCols.forEach((col, idx) => {
+                    col.classList.remove('sorted-desc', 'sorted-asc');
+                    col.removeAttribute('aria-sort');
+                    // Only show sort indicator for the chosen column
+                    if (idx === colIndex) {
+                        const cls = (sortState.direction === 'desc') ? 'sorted-desc' : 'sorted-asc';
+                        col.classList.add(cls);
+                        col.setAttribute('aria-sort', sortState.direction === 'desc' ? 'descending' : 'ascending');
+                    }
+                });
+            }
+
+            // Attach listeners to headerColumns that are visible; store an index so we can map to data cells
+            headerCols.forEach((col, idx) => {
+                col.dataset.colIndex = idx;
+                col.addEventListener('click', function () {
+                    // Only allow sorts on columns that are currently visible
+                    const style = window.getComputedStyle(col);
+                    if (style.display === 'none' || style.visibility === 'hidden') return;
+                    sortByStat(idx);
+                });
+            });
+            // --- End sorting setup ---
+
+            // Initial render: stats + left column top 5 for 'all'
+            filterStats();
+            filterPlayers();
+            renderTopPlayers(currentPositionFilter);
+        });
+    </script>
+</body>
+</html>
